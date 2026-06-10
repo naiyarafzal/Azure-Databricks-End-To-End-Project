@@ -79,6 +79,10 @@
 										"sink_filename": {
 											"value": "@if(\n    equals(pipeline().parameters.current_batch, 'first'),\n    item().first_file,\n    item().second_file\n)",
 											"type": "Expression"
+										},
+										"sink_file_system": {
+											"value": "@item().file_system_name",
+											"type": "Expression"
 										}
 									}
 								}
