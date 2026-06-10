@@ -16,7 +16,7 @@
 			"location": {
 				"type": "HttpServerLocation",
 				"relativeUrl": {
-					"value": "naiyarafzal/Azure-Databricks-End-To-End-Project/main/@{dataset().p_filename}",
+					"value": "naiyarafzal/Azure-Databricks-End-To-End-Project/main/data/@{dataset().p_filename}",
 					"type": "Expression"
 				}
 			},
