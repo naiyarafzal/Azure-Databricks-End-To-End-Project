@@ -1,0 +1,19 @@
+{
+	"name": "DS_Current_Batch",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "datalake_LS",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "current_batch",
+				"fileSystem": "raw"
+			}
+		},
+		"schema": {}
+	}
+}

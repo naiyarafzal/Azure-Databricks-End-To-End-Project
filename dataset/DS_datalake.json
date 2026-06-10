@@ -11,6 +11,9 @@
 			},
 			"sink_filename": {
 				"type": "string"
+			},
+			"sink_file_system": {
+				"type": "string"
 			}
 		},
 		"annotations": [],
@@ -26,7 +29,10 @@
 					"value": "@dataset().sink_directory",
 					"type": "Expression"
 				},
-				"fileSystem": "source"
+				"fileSystem": {
+					"value": "@dataset().sink_file_system",
+					"type": "Expression"
+				}
 			},
 			"compressionCodec": "snappy"
 		},
