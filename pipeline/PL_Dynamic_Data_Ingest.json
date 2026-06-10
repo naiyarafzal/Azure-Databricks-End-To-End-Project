@@ -188,10 +188,15 @@
 				"typeProperties": {
 					"source": {
 						"type": "JsonSource",
-						"additionalColumns": {
-							"type": "Expression",
-							"value": "@if( equals(activity('Current_Batch').output.firstRow.current_batch, 'first'), 'second', 'first' )"
-						},
+						"additionalColumns": [
+							{
+								"name": "current_batch",
+								"value": {
+									"value": "@if(equals(activity('Current_Batch').output.firstRow.current_batch,'first'),'second','first')",
+									"type": "Expression"
+								}
+							}
+						],
 						"storeSettings": {
 							"type": "AzureBlobFSReadSettings",
 							"recursive": true,
