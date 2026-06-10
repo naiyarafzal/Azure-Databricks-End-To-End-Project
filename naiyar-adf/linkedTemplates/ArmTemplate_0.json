@@ -1,0 +1,272 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "naiyar-adf"
+		},
+		"datalake_LS_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'datalake_LS'"
+		},
+		"LS_git_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://raw.githubusercontent.com/"
+		},
+		"datalake_LS_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://naiyarstorage.dfs.core.windows.net/"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_git')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "HttpServer",
+				"typeProperties": {
+					"url": "[parameters('LS_git_properties_typeProperties_url')]",
+					"enableServerCertificateValidation": true,
+					"authenticationType": "Anonymous"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/datalake_LS')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('datalake_LS_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('datalake_LS_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_datalake')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "datalake_LS",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"sink_directory": {
+						"type": "string"
+					},
+					"sink_filename": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().sink_filename",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().sink_directory",
+							"type": "Expression"
+						},
+						"fileSystem": "source"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/datalake_LS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_git')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_git",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"p_filename": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "HttpServerLocation",
+						"relativeUrl": {
+							"value": "naiyarafzal/Azure-Databricks-End-To-End-Project/main/data/@{dataset().p_filename}",
+							"type": "Expression"
+						}
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_git')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_Data_Ingestion')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@pipeline().parameters.files_array",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Git-to-DataLake",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "ParquetSource",
+											"storeSettings": {
+												"type": "HttpReadSettings",
+												"requestMethod": "GET"
+											},
+											"formatSettings": {
+												"type": "ParquetReadSettings"
+											}
+										},
+										"sink": {
+											"type": "ParquetSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "ParquetWriteSettings"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "DS_git",
+											"type": "DatasetReference",
+											"parameters": {
+												"p_filename": {
+													"value": "@if(equals(pipeline().parameters.current_batch,'first'),\n    item().first_file,\n    item().second_file \n)",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DS_datalake",
+											"type": "DatasetReference",
+											"parameters": {
+												"sink_directory": {
+													"value": "@item().directory_name",
+													"type": "Expression"
+												},
+												"sink_filename": {
+													"value": "@if(\n    equals(pipeline().parameters.current_batch, 'first'),\n    item().first_file,\n    item().second_file\n)",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"files_array": {
+						"type": "array",
+						"defaultValue": [
+							{
+								"directory_name": "customer",
+								"first_file": "customer_first.parquet",
+								"second_file": "customers_second.parquet"
+							},
+							{
+								"directory_name": "orders",
+								"first_file": "orders_first.parquet",
+								"second_file": "orders_second.parquet"
+							},
+							{
+								"directory_name": "products",
+								"first_file": "products_first.parquet",
+								"second_file": "products_second.parquet"
+							},
+							{
+								"directory_name": "regions",
+								"first_file": "regions.parquet",
+								"second_file": "regions.parquet"
+							}
+						]
+					},
+					"current_batch": {
+						"type": "string",
+						"defaultValue": "first"
+					}
+				},
+				"variables": {
+					"current_batch": {
+						"type": "String",
+						"defaultValue": "first"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-06-10T17:06:16Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DS_git')]",
+				"[concat(variables('factoryId'), '/datasets/DS_datalake')]"
+			]
+		}
+	]
+}
