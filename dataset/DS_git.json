@@ -1,0 +1,28 @@
+{
+	"name": "DS_git",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_git",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"p_filename": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "HttpServerLocation",
+				"relativeUrl": {
+					"value": "naiyarafzal/Azure-Databricks-End-To-End-Project/main/@{dataset().p_filename}",
+					"type": "Expression"
+				}
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

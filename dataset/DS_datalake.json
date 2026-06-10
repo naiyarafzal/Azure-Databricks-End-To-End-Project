@@ -1,0 +1,36 @@
+{
+	"name": "DS_datalake",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "datalake_LS",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"sink_directory": {
+				"type": "string"
+			},
+			"sink_filename": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().sink_filename",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().sink_directory",
+					"type": "Expression"
+				},
+				"fileSystem": "source"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

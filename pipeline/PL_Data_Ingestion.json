@@ -1,0 +1,132 @@
+{
+	"name": "PL_Data_Ingestion",
+	"properties": {
+		"activities": [
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.files_array",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Git-to-DataLake",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "ParquetSource",
+									"storeSettings": {
+										"type": "HttpReadSettings",
+										"requestMethod": "GET"
+									},
+									"formatSettings": {
+										"type": "ParquetReadSettings"
+									}
+								},
+								"sink": {
+									"type": "ParquetSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "ParquetWriteSettings"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_git",
+									"type": "DatasetReference",
+									"parameters": {
+										"p_filename": {
+											"value": "@if(equals(pipeline().parameters.current_batch,'first'),\n    item().first_file,\n    item().second_file \n)",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_datalake",
+									"type": "DatasetReference",
+									"parameters": {
+										"sink_directory": {
+											"value": "@item().directory_name",
+											"type": "Expression"
+										},
+										"sink_filename": {
+											"value": "@if(\n    equals(pipeline().parameters.current_batch, 'first'),\n    item().first_file,\n    item().second_file\n)",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"files_array": {
+				"type": "array",
+				"defaultValue": [
+					{
+						"directory_name": "customer",
+						"first_file": "customer_first.parquet",
+						"second_file": "customers_second.parquet"
+					},
+					{
+						"directory_name": "orders",
+						"first_file": "orders_first.parquet",
+						"second_file": "orders_second.parquet"
+					},
+					{
+						"directory_name": "products",
+						"first_file": "products_first.parquet",
+						"second_file": "products_second.parquet"
+					},
+					{
+						"directory_name": "regions",
+						"first_file": "regions.parquet",
+						"second_file": "regions.parquet"
+					}
+				]
+			},
+			"current_batch": {
+				"type": "string",
+				"defaultValue": "first"
+			}
+		},
+		"variables": {
+			"current_batch": {
+				"type": "String",
+				"defaultValue": "first"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2026-06-10T17:06:16Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

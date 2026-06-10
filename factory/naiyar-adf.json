@@ -1,0 +1,15 @@
+{
+	"name": "naiyar-adf",
+	"properties": {
+		"trustModeClaimForMi": {
+			"value": "Disabled",
+			"editable": true
+		}
+	},
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "ef3c00dd-ae04-40b6-a0f4-1d672a3dd71a",
+		"tenantId": "1128513e-4285-4ff6-9d1e-db38ef0af18a"
+	}
+}
